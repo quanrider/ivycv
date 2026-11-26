@@ -70,3 +70,23 @@ export function extractClientIp(request: Request): string {
   if (realIp) return realIp;
   return '127.0.0.1';
 }
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export function getConfiguredDailyLimit(): number {
+  const parsed = Number(process.env.AI_DAILY_LIMIT ?? '10');
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 10;
+}
+
+let sharedAssistLimiter: DailyRateLimiter = createDailyRateLimiter({
+  limit: getConfiguredDailyLimit(),
+  windowMs: DAY_MS,
+});
+
+export function getSharedAssistRateLimiter(): DailyRateLimiter {
+  return sharedAssistLimiter;
+}
+
+export function resetAssistRateLimiterForTests(limit = 10): void {
+  sharedAssistLimiter = createDailyRateLimiter({ limit, windowMs: DAY_MS });
+}

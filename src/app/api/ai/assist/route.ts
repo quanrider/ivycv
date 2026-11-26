@@ -4,23 +4,11 @@ import { CvContentSchema, CvLanguageSchema } from '@/types/cv';
 import { getUniversityById } from '@/data/universities';
 import { buildAiPrompt } from '@/lib/ai-prompts';
 import { callGeminiJson } from '@/lib/gemini';
-import { createDailyRateLimiter, extractClientIp } from '@/lib/rate-limit';
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-function getConfiguredLimit(): number {
-  const parsed = Number(process.env.AI_DAILY_LIMIT ?? '10');
-  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 10;
-}
-
-let rateLimiter = createDailyRateLimiter({
-  limit: getConfiguredLimit(),
-  windowMs: DAY_MS,
-});
-
-export function __resetRateLimiterForTests(limit = 10): void {
-  rateLimiter = createDailyRateLimiter({ limit, windowMs: DAY_MS });
-}
+import {
+  extractClientIp,
+  getConfiguredDailyLimit,
+  getSharedAssistRateLimiter,
+} from '@/lib/rate-limit';
 
 const AssistRequestSchema = z.object({
   action: z.enum(['rewrite_bullet', 'review_section', 'review_cv']),
@@ -67,7 +55,7 @@ export async function POST(request: Request) {
   let activeApiKey = trimmedUserKey;
   let quotaInfo = {
     remaining: -1,
-    limit: getConfiguredLimit(),
+    limit: getConfiguredDailyLimit(),
     usingByok,
   };
 
@@ -85,7 +73,7 @@ export async function POST(request: Request) {
     }
 
     const clientIp = extractClientIp(request);
-    const quota = rateLimiter.consume(clientIp);
+    const quota = getSharedAssistRateLimiter().consume(clientIp);
     if (!quota.allowed) {
       return NextResponse.json(
         {

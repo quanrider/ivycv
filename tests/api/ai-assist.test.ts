@@ -5,7 +5,8 @@ vi.mock('@/lib/gemini', () => ({
 }));
 
 import { callGeminiJson } from '@/lib/gemini';
-import { POST, __resetRateLimiterForTests } from '@/app/api/ai/assist/route';
+import { POST } from '@/app/api/ai/assist/route';
+import { resetAssistRateLimiterForTests } from '@/lib/rate-limit';
 
 function makeRequest(body: unknown, ip = '10.0.0.1'): Request {
   return new Request('http://localhost:3000/api/ai/assist', {
@@ -21,7 +22,7 @@ function makeRequest(body: unknown, ip = '10.0.0.1'): Request {
 describe('POST /api/ai/assist', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    __resetRateLimiterForTests(2);
+    resetAssistRateLimiterForTests(2);
     delete process.env.GEMINI_API_KEY;
   });
 
