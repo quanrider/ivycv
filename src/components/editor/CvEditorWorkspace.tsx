@@ -35,7 +35,14 @@ export function CvEditorWorkspace() {
   const requestedCvId = searchParams.get('cv');
 
   const [savedCvs, setSavedCvs] = useState<CvDocument[]>([]);
-  const [cv, setCv] = useState<CvDocument>(() => createCvFromTemplate('harvard-ocs', 'en'));
+  const [cv, setCv] = useState<CvDocument>(() => {
+    const base = createCvFromTemplate('harvard-ocs', 'en');
+    return {
+      ...base,
+      id: 'cv-initial-placeholder',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+  });
   const [initialized, setInitialized] = useState(false);
 
   const [drawerOpen, setDrawerOpen] = useState(true);
@@ -113,6 +120,7 @@ export function CvEditorWorkspace() {
     saveCv(fresh);
     setSavedCvs(loadSavedCvs());
     setCv(fresh);
+    setBulletTarget(null);
     setBanner({ type: 'info', text: 'Đã tạo bản CV mới từ mẫu đã chọn.' });
   }
 
@@ -124,11 +132,13 @@ export function CvEditorWorkspace() {
     }
     setSavedCvs(loadSavedCvs());
     setCv(res.data);
+    setBulletTarget(null);
   }
 
   function handleDeleteCv() {
     const remaining = deleteCv(cv.id);
     setSavedCvs(remaining);
+    setBulletTarget(null);
     if (remaining.length > 0) {
       setCv(remaining[0]);
     } else {
@@ -157,6 +167,7 @@ export function CvEditorWorkspace() {
     }
     setSavedCvs(loadSavedCvs());
     setCv(res.data);
+    setBulletTarget(null);
     setBanner({ type: 'info', text: 'Đã nhập bản sao lưu CV thành công.' });
   }
 
@@ -176,15 +187,26 @@ export function CvEditorWorkspace() {
   }
 
   function handleApplyBullet(target: BulletTarget, text: string) {
+    const sec = cv.content.sections.find((s) => s.id === target.sectionId);
+    const item = sec?.items.find((it) => it.id === target.itemId);
+    if (!item || target.bulletIndex < 0 || target.bulletIndex >= item.bullets.length) {
+      setBulletTarget(null);
+      setBanner({
+        type: 'error',
+        text: 'Dòng gạch đầu dòng mục tiêu không còn tồn tại trong CV hiện tại.',
+      });
+      return;
+    }
+
     setCv((prev) => ({
       ...prev,
       content: {
         ...prev.content,
-        sections: prev.content.sections.map((sec) =>
-          sec.id === target.sectionId
+        sections: prev.content.sections.map((s) =>
+          s.id === target.sectionId
             ? {
-                ...sec,
-                items: sec.items.map((it) =>
+                ...s,
+                items: s.items.map((it) =>
                   it.id === target.itemId
                     ? {
                         ...it,
@@ -195,7 +217,7 @@ export function CvEditorWorkspace() {
                     : it
                 ),
               }
-            : sec
+            : s
         ),
       },
     }));
@@ -213,7 +235,10 @@ export function CvEditorWorkspace() {
         onTitleChange={(title) => setCv((prev) => ({ ...prev, title }))}
         onSelectCv={(id) => {
           const found = savedCvs.find((item) => item.id === id);
-          if (found) setCv(found);
+          if (found) {
+            setCv(found);
+            setBulletTarget(null);
+          }
         }}
         onCreateNewCv={handleCreateNewCv}
         onDuplicateCv={handleDuplicateCv}

@@ -8,6 +8,7 @@ export interface RateLimitResult {
 export interface DailyRateLimiter {
   consume(ip: string, now?: number): RateLimitResult;
   reset(): void;
+  size(): number;
 }
 
 export function createDailyRateLimiter(opts: {
@@ -17,8 +18,18 @@ export function createDailyRateLimiter(opts: {
   const { limit, windowMs } = opts;
   const buckets = new Map<string, { count: number; resetAt: number }>();
 
+  function pruneExpired(now: number) {
+    if (buckets.size <= 100) return;
+    for (const [key, entry] of buckets.entries()) {
+      if (now >= entry.resetAt) {
+        buckets.delete(key);
+      }
+    }
+  }
+
   return {
     consume(ip: string, now = Date.now()): RateLimitResult {
+      pruneExpired(now);
       const key = ip || 'unknown';
       const entry = buckets.get(key);
 
@@ -56,6 +67,10 @@ export function createDailyRateLimiter(opts: {
 
     reset() {
       buckets.clear();
+    },
+
+    size() {
+      return buckets.size;
     },
   };
 }

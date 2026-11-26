@@ -39,16 +39,19 @@ function getTheme(template: UniversityTemplate) {
       fontSize: 17,
       fontWeight: 700,
       color: template.layoutVariant === 'classic-serif' ? '#111827' : accent,
+      textAlign: headerCentered ? 'center' : 'left',
       marginBottom: 2,
     },
     headline: {
       fontSize: 10,
       color: '#374151',
+      textAlign: headerCentered ? 'center' : 'left',
       marginBottom: 3,
     },
     contactLine: {
       fontSize: 8.5,
       color: '#4B5563',
+      textAlign: headerCentered ? 'center' : 'left',
     },
     photo: {
       width: 56,
@@ -80,11 +83,14 @@ function getTheme(template: UniversityTemplate) {
       alignItems: 'baseline',
     },
     itemTitle: {
+      flex: 1,
+      paddingRight: 10,
       fontSize: 9.8,
       fontWeight: 700,
       color: '#111827',
     },
     itemDate: {
+      flexShrink: 0,
       fontSize: 8.8,
       color: '#4B5563',
     },
@@ -95,11 +101,14 @@ function getTheme(template: UniversityTemplate) {
       marginBottom: 2,
     },
     itemSubtitle: {
+      flex: 1,
+      paddingRight: 10,
       fontSize: 9.2,
       fontStyle: isSerif ? 'italic' : 'normal',
       color: '#374151',
     },
     itemLocation: {
+      flexShrink: 0,
       fontSize: 8.6,
       color: '#6B7280',
     },

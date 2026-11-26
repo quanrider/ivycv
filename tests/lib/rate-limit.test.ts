@@ -28,4 +28,15 @@ describe('createDailyRateLimiter', () => {
     expect(afterReset.allowed).toBe(true);
     expect(afterReset.remaining).toBe(1);
   });
+
+  it('prunes expired IP entries so memory stays bounded', () => {
+    const limiter = createDailyRateLimiter({ limit: 2, windowMs: 1000 });
+    const t0 = 2_000_000;
+    for (let i = 0; i < 120; i++) {
+      limiter.consume(`10.0.0.${i}`, t0);
+    }
+    expect(limiter.size()).toBe(120);
+    limiter.consume('10.0.1.1', t0 + 1500);
+    expect(limiter.size()).toBe(1);
+  });
 });

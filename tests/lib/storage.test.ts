@@ -29,6 +29,10 @@ describe('localStorage CV persistence', () => {
     expect(loadSavedCvs()).toHaveLength(2);
     if (dup.ok) {
       expect(dup.data.id).not.toBe(cv.id);
+      expect(dup.data.content.sections[0].id).not.toBe(cv.content.sections[0].id);
+      expect(dup.data.content.sections[0].items[0].id).not.toBe(
+        cv.content.sections[0].items[0].id
+      );
       const remaining = deleteCv(dup.data.id);
       expect(remaining).toHaveLength(1);
     }

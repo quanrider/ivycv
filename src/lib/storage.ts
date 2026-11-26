@@ -90,8 +90,18 @@ export function duplicateCv(cvId: string): StorageResult<CvDocument> {
   if (!target) {
     return { ok: false, error: 'Không tìm thấy CV cần nhân bản.' };
   }
+  const cloned = structuredClone(target);
+  cloned.content.sections = cloned.content.sections.map((section) => ({
+    ...section,
+    id: generateId('sec'),
+    items: section.items.map((item) => ({
+      ...item,
+      id: generateId('item'),
+    })),
+  }));
+
   const copy: CvDocument = {
-    ...structuredClone(target),
+    ...cloned,
     id: generateId('cv'),
     title: `${target.title} (Bản sao)`,
     updatedAt: new Date().toISOString(),

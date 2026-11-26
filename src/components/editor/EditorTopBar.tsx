@@ -56,9 +56,18 @@ export function EditorTopBar({
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const text = await file.text();
-    onImportJson(text);
-    e.target.value = '';
+    try {
+      if (file.size > 2 * 1024 * 1024) {
+        onImportJson('');
+        return;
+      }
+      const text = await file.text();
+      onImportJson(text);
+    } catch {
+      onImportJson('');
+    } finally {
+      e.target.value = '';
+    }
   }
 
   return (
