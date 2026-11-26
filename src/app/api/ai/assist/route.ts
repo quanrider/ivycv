@@ -10,15 +10,39 @@ import {
   getSharedAssistRateLimiter,
 } from '@/lib/rate-limit';
 
-const AssistRequestSchema = z.object({
-  action: z.enum(['rewrite_bullet', 'review_section', 'review_cv']),
-  templateId: z.string().min(1),
-  language: CvLanguageSchema.default('vi'),
-  content: CvContentSchema.optional(),
-  sectionId: z.string().optional(),
-  targetText: z.string().optional(),
-  userApiKey: z.string().optional(),
-});
+const AssistRequestSchema = z
+  .object({
+    action: z.enum(['rewrite_bullet', 'review_section', 'review_cv']),
+    templateId: z.string().min(1),
+    language: CvLanguageSchema.default('vi'),
+    content: CvContentSchema.optional(),
+    sectionId: z.string().optional(),
+    targetText: z.string().optional(),
+    userApiKey: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.action === 'rewrite_bullet' && !data.targetText?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Cần nhập nội dung gạch đầu dòng để viết lại.',
+        path: ['targetText'],
+      });
+    }
+    if (data.action === 'review_section' && (!data.content || !data.sectionId?.trim())) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Cần chọn mục và nội dung CV để góp ý.',
+        path: ['sectionId'],
+      });
+    }
+    if (data.action === 'review_cv' && !data.content) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Cần nội dung CV để đánh giá tổng thể.',
+        path: ['content'],
+      });
+    }
+  });
 
 export async function POST(request: Request) {
   let rawBody: unknown;
@@ -115,7 +139,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ result, quota: quotaInfo }, { status: 200 });
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : 'Không thể kết nối tới dịch vụ AI lúc này.';
+      usingByok && err instanceof Error
+        ? err.message
+        : 'Không thể kết nối tới dịch vụ AI lúc này. Vui lòng thử lại sau.';
     return NextResponse.json(
       { error: message, code: 'AI_UPSTREAM_ERROR', quota: quotaInfo },
       { status: 502 }

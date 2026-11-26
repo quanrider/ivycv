@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ArrowUp,
   ArrowDown,
@@ -40,7 +40,12 @@ export function CvFormEditor({
   onError,
 }: CvFormEditorProps) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [linksRaw, setLinksRaw] = useState(cv.content.personalInfo.links.join(', '));
   const { personalInfo, sections } = cv.content;
+
+  useEffect(() => {
+    setLinksRaw(cv.content.personalInfo.links.join(', '));
+  }, [cv.id]);
 
   function updatePersonal(patch: Partial<typeof personalInfo>) {
     onChange({
@@ -181,20 +186,26 @@ export function CvFormEditor({
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-stone-600">
+            <label
+              htmlFor="cv-links"
+              className="mb-1 block text-xs font-medium text-stone-600"
+            >
               Liên kết (cách nhau bằng dấu phẩy)
             </label>
             <input
+              id="cv-links"
               type="text"
-              value={personalInfo.links.join(', ')}
-              onChange={(e) =>
+              value={linksRaw}
+              onChange={(e) => {
+                const raw = e.target.value;
+                setLinksRaw(raw);
                 updatePersonal({
-                  links: e.target.value
+                  links: raw
                     .split(',')
                     .map((s) => s.trim())
                     .filter(Boolean),
-                })
-              }
+                });
+              }}
               className="w-full rounded-lg border border-stone-200 px-3 py-1.5 text-sm outline-none focus:border-stone-400"
             />
           </div>

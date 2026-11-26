@@ -90,4 +90,40 @@ describe('POST /api/ai/assist', () => {
     expect(r3.status).toBe(429);
     expect((await r3.json()).code).toBe('QUOTA_EXCEEDED');
   });
+
+  it('rejects rewrite_bullet without targetText (400) before consuming daily quota', async () => {
+    process.env.GEMINI_API_KEY = 'AIza-server-key';
+    vi.mocked(callGeminiJson).mockResolvedValue({
+      suggestions: ['Improved'],
+      explanation: 'Done',
+    });
+
+    const bad = await POST(
+      makeRequest(
+        {
+          action: 'rewrite_bullet',
+          templateId: 'mit-capd',
+          language: 'en',
+          targetText: '   ',
+        },
+        '198.51.100.2'
+      )
+    );
+    expect(bad.status).toBe(400);
+
+    const good = await POST(
+      makeRequest(
+        {
+          action: 'rewrite_bullet',
+          templateId: 'mit-capd',
+          language: 'en',
+          targetText: 'Built API',
+        },
+        '198.51.100.2'
+      )
+    );
+    expect(good.status).toBe(200);
+    // Limit is 2, so 1 remaining proves the 400 request did NOT consume quota
+    expect((await good.json()).quota.remaining).toBe(1);
+  });
 });

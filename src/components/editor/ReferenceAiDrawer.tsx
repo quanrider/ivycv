@@ -49,6 +49,9 @@ export function ReferenceAiDrawer({
   onApplyBulletSuggestion,
 }: ReferenceAiDrawerProps) {
   const [bulletInput, setBulletInput] = useState(bulletTarget?.text ?? '');
+  const [selectedSectionId, setSelectedSectionId] = useState(
+    cv.content.sections[0]?.id ?? ''
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [aiResult, setAiResult] = useState<AiResponsePayload['result'] | null>(null);
@@ -60,10 +63,24 @@ export function ReferenceAiDrawer({
     }
   }, [bulletTarget]);
 
-  async function runAi(action: 'rewrite_bullet' | 'review_cv') {
+  useEffect(() => {
+    if (!cv.content.sections.some((s) => s.id === selectedSectionId)) {
+      setSelectedSectionId(cv.content.sections[0]?.id ?? '');
+    }
+  }, [cv.content.sections, selectedSectionId]);
+
+  async function runAi(action: 'rewrite_bullet' | 'review_section' | 'review_cv') {
     setLoading(true);
     setError(null);
     setAiResult(null);
+
+    const strippedContent = {
+      ...cv.content,
+      personalInfo: {
+        ...cv.content.personalInfo,
+        photoDataUrl: undefined,
+      },
+    };
 
     try {
       const res = await fetch('/api/ai/assist', {
@@ -73,7 +90,8 @@ export function ReferenceAiDrawer({
           action,
           templateId: template.id,
           language: cv.language,
-          content: action === 'review_cv' ? cv.content : undefined,
+          content: action === 'rewrite_bullet' ? undefined : strippedContent,
+          sectionId: action === 'review_section' ? selectedSectionId : undefined,
           targetText: action === 'rewrite_bullet' ? bulletInput : undefined,
           userApiKey: byokKey ?? undefined,
         }),
@@ -250,6 +268,37 @@ export function ReferenceAiDrawer({
               </div>
             </div>
 
+            <div className="space-y-2 border-t border-stone-200 pt-3">
+              <label
+                htmlFor="ai-section-select"
+                className="block text-xs font-bold text-stone-800"
+              >
+                Góp ý từng mục CV
+              </label>
+              <div className="flex gap-2">
+                <select
+                  id="ai-section-select"
+                  value={selectedSectionId}
+                  onChange={(e) => setSelectedSectionId(e.target.value)}
+                  className="flex-1 rounded-lg border border-stone-200 bg-white px-2 py-1.5 text-xs text-stone-800"
+                >
+                  {cv.content.sections.map((sec) => (
+                    <option key={sec.id} value={sec.id}>
+                      {sec.title || sec.type}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  disabled={loading || !selectedSectionId}
+                  onClick={() => runAi('review_section')}
+                  className="rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-800 transition hover:bg-indigo-100 disabled:opacity-50"
+                >
+                  Góp ý mục này
+                </button>
+              </div>
+            </div>
+
             <div className="border-t border-stone-200 pt-3">
               <button
                 type="button"
@@ -329,6 +378,17 @@ export function ReferenceAiDrawer({
                     <ul className="mt-1 list-disc space-y-1 pl-4 text-stone-700">
                       {aiResult.improvements.map((imp, i) => (
                         <li key={i}>{imp}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+
+                {aiResult.rewrittenExamples && aiResult.rewrittenExamples.length > 0 ? (
+                  <div>
+                    <div className="font-bold text-indigo-900">Ví dụ viết lại đề xuất:</div>
+                    <ul className="mt-1 list-disc space-y-1 pl-4 text-stone-800">
+                      {aiResult.rewrittenExamples.map((ex, i) => (
+                        <li key={i}>{ex}</li>
                       ))}
                     </ul>
                   </div>

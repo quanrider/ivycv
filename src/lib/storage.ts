@@ -1,4 +1,5 @@
 import { CvDocumentSchema, type CvDocument } from '@/types/cv';
+import { getUniversityById } from '@/data/universities';
 
 const CVS_STORAGE_KEY = 'cv_builder_documents_v1';
 const BYOK_STORAGE_KEY = 'cv_builder_byok_key_v1';
@@ -121,6 +122,13 @@ export function importCvFromJson(rawJson: string): StorageResult<CvDocument> {
     };
   }
 
+  if (!getUniversityById(checked.data.templateId)) {
+    return {
+      ok: false,
+      error: 'Tệp JSON chứa mã mẫu trường đại học không hợp lệ.',
+    };
+  }
+
   const imported: CvDocument = {
     ...checked.data,
     id: generateId('cv'),
@@ -139,14 +147,24 @@ export function loadByokKey(): string | null {
   }
 }
 
-export function saveByokKey(key: string): void {
-  if (!isBrowserStorageAvailable()) return;
+export function saveByokKey(key: string): StorageResult<void> {
+  if (!isBrowserStorageAvailable()) {
+    return { ok: false, error: 'Trình duyệt hiện không hỗ trợ lưu trữ cục bộ.' };
+  }
   const trimmed = key.trim();
   if (!trimmed) {
     clearByokKey();
-    return;
+    return { ok: true, data: undefined };
   }
-  window.localStorage.setItem(BYOK_STORAGE_KEY, trimmed);
+  try {
+    window.localStorage.setItem(BYOK_STORAGE_KEY, trimmed);
+    return { ok: true, data: undefined };
+  } catch {
+    return {
+      ok: false,
+      error: 'Bộ nhớ trình duyệt đã đầy dung lượng, không thể lưu API key.',
+    };
+  }
 }
 
 export function clearByokKey(): void {

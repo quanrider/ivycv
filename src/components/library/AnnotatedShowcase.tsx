@@ -21,6 +21,7 @@ export function AnnotatedShowcase({ template }: { template: UniversityTemplate }
   const [selectedAnnId, setSelectedAnnId] = useState<string>(
     template.annotations[0]?.id ?? ''
   );
+  const [storageError, setStorageError] = useState<string | null>(null);
 
   const activeAnnotation =
     template.annotations.find((a) => a.id === selectedAnnId) ??
@@ -38,7 +39,11 @@ export function AnnotatedShowcase({ template }: { template: UniversityTemplate }
 
   function handleUseTemplate(lang: 'en' | 'vi') {
     const newCv = createCvFromTemplate(template.id, lang);
-    saveCv(newCv);
+    const saved = saveCv(newCv);
+    if (!saved.ok) {
+      setStorageError(saved.error);
+      return;
+    }
     router.push(`/editor?cv=${encodeURIComponent(newCv.id)}`);
   }
 
@@ -91,6 +96,12 @@ export function AnnotatedShowcase({ template }: { template: UniversityTemplate }
           </button>
         </div>
       </div>
+
+      {storageError ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-800">
+          {storageError}
+        </div>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
         <div>

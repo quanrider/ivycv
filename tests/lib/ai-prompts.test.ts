@@ -32,4 +32,21 @@ describe('buildAiPrompt', () => {
     expect(systemInstruction).toContain(mit.actionVerbs.en[0]);
     expect(systemInstruction).toMatch(/English/i);
   });
+
+  it('strips photoDataUrl from review_cv prompt so base64 data is never sent to Gemini', () => {
+    const eth = getUniversityById('eth-zurich-stem')!;
+    const contentWithPhoto = structuredClone(eth.sampleCv);
+    contentWithPhoto.personalInfo.photoDataUrl =
+      'data:image/jpeg;base64,SUPER_LONG_SECRET_BASE64_PAYLOAD';
+
+    const { userPrompt } = buildAiPrompt({
+      action: 'review_cv',
+      template: eth,
+      language: 'vi',
+      content: contentWithPhoto,
+    });
+
+    expect(userPrompt).not.toContain('SUPER_LONG_SECRET_BASE64_PAYLOAD');
+    expect(userPrompt).not.toContain('photoDataUrl');
+  });
 });

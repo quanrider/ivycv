@@ -80,4 +80,26 @@ describe('localStorage CV persistence', () => {
     clearByokKey();
     expect(loadByokKey()).toBeNull();
   });
+
+  it('rejects external URLs, SVG photoDataUrl, and unknown templateId on JSON import', () => {
+    const cv = createCvFromTemplate('harvard-ocs', 'en');
+    cv.content.personalInfo.photoDataUrl = 'https://evil.example/tracker.png';
+    expect(importCvFromJson(exportCvToJson(cv)).ok).toBe(false);
+
+    cv.content.personalInfo.photoDataUrl = 'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=';
+    expect(importCvFromJson(exportCvToJson(cv)).ok).toBe(false);
+
+    const badTpl = createCvFromTemplate('harvard-ocs', 'en');
+    badTpl.templateId = 'unknown-school-999';
+    expect(importCvFromJson(exportCvToJson(badTpl)).ok).toBe(false);
+  });
+
+  it('catches QuotaExceededError in saveByokKey without throwing', () => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage full', 'QuotaExceededError');
+    });
+
+    const res = saveByokKey('AIza-quota-test');
+    expect(res.ok).toBe(false);
+  });
 });

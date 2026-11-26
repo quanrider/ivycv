@@ -44,6 +44,7 @@ export function CvEditorWorkspace() {
   const [byokKey, setByokKey] = useState<string | null>(null);
   const [byokModalOpen, setByokModalOpen] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [autosaveError, setAutosaveError] = useState<string | null>(null);
   const [banner, setBanner] = useState<{ type: 'error' | 'info'; text: string } | null>(
     null
   );
@@ -60,7 +61,8 @@ export function CvEditorWorkspace() {
       setCv(target);
     } else {
       const starter = createCvFromTemplate('harvard-ocs', 'en');
-      saveCv(starter);
+      const saved = saveCv(starter);
+      if (!saved.ok) setAutosaveError(saved.error);
       setSavedCvs([starter]);
       setCv(starter);
     }
@@ -71,9 +73,10 @@ export function CvEditorWorkspace() {
     if (!initialized) return;
     const result = saveCv(cv);
     if (!result.ok) {
-      setBanner({ type: 'error', text: result.error });
+      setAutosaveError(result.error);
       return;
     }
+    setAutosaveError(null);
     setSavedCvs(loadSavedCvs());
   }, [cv, initialized]);
 
@@ -223,6 +226,19 @@ export function CvEditorWorkspace() {
         onToggleDrawer={() => setDrawerOpen((prev) => !prev)}
       />
 
+      {autosaveError ? (
+        <div className="flex items-center justify-between border-b border-red-200 bg-red-50 px-4 py-2 text-xs font-medium text-red-800">
+          <span>{autosaveError}</span>
+          <button
+            type="button"
+            onClick={() => setAutosaveError(null)}
+            className="underline"
+          >
+            Đóng
+          </button>
+        </div>
+      ) : null}
+
       {banner ? (
         <div
           className={`flex items-center justify-between px-4 py-2 text-xs font-medium ${
@@ -288,7 +304,11 @@ export function CvEditorWorkspace() {
         currentKey={byokKey}
         onClose={() => setByokModalOpen(false)}
         onSave={(key) => {
-          saveByokKey(key);
+          const res = saveByokKey(key);
+          if (!res.ok) {
+            setBanner({ type: 'error', text: res.error });
+            return;
+          }
           setByokKey(loadByokKey());
         }}
         onClear={() => {

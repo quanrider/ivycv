@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { KeyRound, X, Trash2 } from 'lucide-react';
 
 interface ByokModalProps {
@@ -19,6 +19,12 @@ export function ByokModal({
   onClear,
 }: ByokModalProps) {
   const [value, setValue] = useState(currentKey ?? '');
+
+  useEffect(() => {
+    if (isOpen) {
+      setValue(currentKey ?? '');
+    }
+  }, [isOpen, currentKey]);
 
   if (!isOpen) return null;
 

@@ -51,9 +51,24 @@ export function buildAiPrompt(input: AiPromptInput): {
     return { systemInstruction, userPrompt };
   }
 
+  const sanitizedContent = content
+    ? {
+        ...content,
+        personalInfo: {
+          fullName: content.personalInfo.fullName,
+          headline: content.personalInfo.headline,
+          email: content.personalInfo.email,
+          phone: content.personalInfo.phone,
+          location: content.personalInfo.location,
+          links: content.personalInfo.links,
+          hasPhoto: Boolean(content.personalInfo.photoDataUrl),
+        },
+      }
+    : {};
+
   const userPrompt = [
     `Review this complete CV against ${template.universityName} standards (structure, clarity, ATS readiness, action verbs, quantification, length):`,
-    JSON.stringify(content ?? {}, null, 2),
+    JSON.stringify(sanitizedContent, null, 2),
     'Return JSON with exact shape: { "score": number (1-10), "summary": string, "strengths": string[], "improvements": string[] }',
   ].join('\n');
   return { systemInstruction, userPrompt };

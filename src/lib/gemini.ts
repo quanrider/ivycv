@@ -11,11 +11,14 @@ export async function callGeminiJson(
   const { apiKey, model, systemInstruction, userPrompt } = input;
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
     model
-  )}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  )}:generateContent`;
 
   const response = await fetch(endpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': apiKey,
+    },
     body: JSON.stringify({
       system_instruction: {
         parts: [{ text: systemInstruction }],

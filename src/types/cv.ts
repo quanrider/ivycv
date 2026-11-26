@@ -25,14 +25,20 @@ export type LayoutVariant = z.infer<typeof LayoutVariantSchema>;
 export const CvFormatSchema = z.enum(['resume-1page', 'academic-cv']);
 export type CvFormat = z.infer<typeof CvFormatSchema>;
 
+const SAFE_PHOTO_DATA_URL = /^data:image\/(jpeg|jpg|png);base64,[A-Za-z0-9+/=]+$/;
+
 export const PersonalInfoSchema = z.object({
-  fullName: z.string().min(1, 'Họ tên không được để trống'),
+  fullName: z.string(),
   headline: z.string().optional(),
   email: z.string().default(''),
   phone: z.string().default(''),
   location: z.string().default(''),
   links: z.array(z.string()).default([]),
-  photoDataUrl: z.string().optional(),
+  photoDataUrl: z
+    .string()
+    .max(200_000, 'Dung lượng ảnh đã mã hóa quá lớn')
+    .regex(SAFE_PHOTO_DATA_URL, 'Ảnh chân dung phải ở định dạng JPG hoặc PNG hợp lệ')
+    .optional(),
 });
 export type PersonalInfo = z.infer<typeof PersonalInfoSchema>;
 
@@ -49,7 +55,7 @@ export type CvItem = z.infer<typeof CvItemSchema>;
 export const CvSectionSchema = z.object({
   id: z.string().min(1),
   type: SectionTypeSchema,
-  title: z.string().min(1),
+  title: z.string(),
   visible: z.boolean().default(true),
   items: z.array(CvItemSchema).default([]),
 });
@@ -63,7 +69,7 @@ export type CvContent = z.infer<typeof CvContentSchema>;
 
 export const CvDocumentSchema = z.object({
   id: z.string().min(1),
-  title: z.string().min(1),
+  title: z.string(),
   templateId: z.string().min(1),
   language: CvLanguageSchema,
   showPhoto: z.boolean().default(false),
